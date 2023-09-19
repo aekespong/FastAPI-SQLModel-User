@@ -7,7 +7,7 @@ from database import create_db_tables, get_db, User
 
 app = FastAPI()
 
-app.mount("/app", StaticFiles(directory="templates"), name="app")
+app.mount("/app", StaticFiles(directory="app"), name="app")
 
 
 @app.on_event("startup")
@@ -18,7 +18,7 @@ def on_startup():
 @app.post("/users/clear")
 def clear_user(db: Session = Depends(get_db)):
     create_db_tables(drop_all=True)
-    return {"Ok": True}
+    return {"cleared": True}
 
 
 def get_user(user_id: int, db: Session = Depends(get_db)) -> User:
@@ -28,15 +28,19 @@ def get_user(user_id: int, db: Session = Depends(get_db)) -> User:
 
 @app.post("/users/", response_model=User)
 def create_user(user: User, db: Session = Depends(get_db)):
+    ic.configureOutput(prefix='create_user START ')
     ic(user)
-    # if get_user(User.id, db) is None:
+    if user.id is not None:
+        db_user = db.get(User, user.id)
+        if not db_user:
+            raise HTTPException(status_code=404, detail="User already exist")
+        
     db.add(user)
     db.commit()
-    ic()
+    db.refresh(user)
+    ic.configureOutput(prefix='create_user RESULT: ')
     ic(user)
     return user
-    # else:
-    #     raise Exception(f"User exist with ID={user.id}")
 
 
 @app.get("/users/")
@@ -51,6 +55,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     user = get_user(user_id, db)
     return user
 
+
 @app.patch("/users/{user_id}", response_model=User)
 def update_user(
     *, session: Session = Depends(get_db), user_id: int, user: User
@@ -58,6 +63,7 @@ def update_user(
     db_user = session.get(User, user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
+    
     user_data = user.dict(exclude_unset=True)
     for key, value in user_data.items():
         setattr(db_user, key, value)
@@ -74,4 +80,4 @@ def remove_user(*, session: Session = Depends(get_db), team_id: int):
         raise HTTPException(status_code=404, detail="User not found")
     session.delete(team)
     session.commit()
-    return {"ok": True}
+    return {"deleted": True}

@@ -57,7 +57,7 @@ def test_create_user_invalid(client: TestClient):
     assert response.status_code == 422
 
 
-def test_read_users(session: Session, client: TestClient):
+def test_list_users(session: Session, client: TestClient):
     user_1 = User(username="deadpond", email="dive@email.com")
     user_2 = User(username="rustyman", email="rusty@email.com")
     session.add(user_1)
@@ -93,12 +93,6 @@ def test_update_user(session: Session, client: TestClient):
     session.add(user_1)
     session.commit()
 
-    response = client.patch(f"/users/{user_1.id}", json={"username": "deadpuddle"})
-    missing_field = response.json()
-
-    assert response.status_code == 422
-    ic(missing_field)
-
     response = client.patch(
         f"/users/{user_1.id}", json={"username": "deadpuddle", "email": "aaaa@bee.com"}
     )
@@ -106,6 +100,18 @@ def test_update_user(session: Session, client: TestClient):
 
     assert response.status_code == 200
     assert data["username"] == "deadpuddle"
+
+
+def test_update_user_missing_field(session: Session, client: TestClient):
+    user_1 = User(username="Deadpond", email="dive@email.com")
+    session.add(user_1)
+    session.commit()
+
+    response = client.patch(f"/users/{user_1.id}", json={"username": "deadpuddle"})
+    missing_field = response.json()
+
+    assert response.status_code == 422
+    ic(missing_field)
 
 
 def test_delete_user(session: Session, client: TestClient):
