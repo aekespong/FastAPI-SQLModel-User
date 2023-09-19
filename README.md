@@ -5,13 +5,13 @@ User is a basic implementation of an API.
 It also includes a very basic HTML-form that presents a list of Users.
 
 The solution is based on:
-  - FastAPI
-  - SQLModel
-  - SQLite
-  - Icecream
-  - Grid.js
-
-Icecream is used instead of print(). See https://github.com/gruns/icecream
+  - FastAPI - Leading API framework
+  - SQLModel - Models on top of SQLAlchemy ORM
+  - SQLite - Database
+  - Icecream - Improved debug prints. See https://github.com/gruns/icecream
+  - Grid.js - Grid to present data
+  - bcrypt - Encrypt passwords
+  - Faker - Generate fake names for test data
 
 # To install
 pip install -r requirements.txt
