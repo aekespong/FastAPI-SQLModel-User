@@ -1,8 +1,8 @@
 # FastAPI-SQLModel-User
 
-User is a basic implementation of an API.
+This is a basic implementation of an API that can be used as a template for new Entity Microservices. Through its API users can be added, modyfied and deleted.
 
-It also includes a very basic HTML-form that presents a list of Users.
+It also includes a very basic HTML-form that presents a list of Users through [gridjs.io.](https://gridjs.io/)
 
 The solution is based on:
   - FastAPI
