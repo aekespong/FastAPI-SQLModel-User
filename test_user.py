@@ -4,7 +4,9 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 from main import app
-from database import User, get_db
+from encrypt import hash_password, check_password
+from model import UserBase, User
+from database import get_db
 
 
 @pytest.fixture(name="session")
@@ -30,7 +32,12 @@ def client_fixture(session: Session):
 
 def test_create_user(client: TestClient):
     response = client.post(
-        "/users/", json={"username": "Admin", "email": "email@email.com"}
+        "/users/",
+        json={
+            "username": "Admin",
+            "email": "email@email.com",
+            "fullname": "Adam Adamsson",
+        },
     )
     data = response.json()
 
@@ -58,8 +65,8 @@ def test_create_user_invalid(client: TestClient):
 
 
 def test_list_users(session: Session, client: TestClient):
-    user_1 = User(username="deadpond", email="dive@email.com")
-    user_2 = User(username="rustyman", email="rusty@email.com")
+    user_1 = UserBase(username="deadpond", email="dive@email.com")
+    user_2 = UserBase(username="rustyman", email="rusty@email.com")
     session.add(user_1)
     session.add(user_2)
     session.commit()
@@ -76,20 +83,20 @@ def test_list_users(session: Session, client: TestClient):
 
 
 def test_read_user(session: Session, client: TestClient):
-    user_1 = User(username="deadpond", email="dive@email.com")
+    user_1 = UserBase(username="deadpond", email="dive@email.com")
     session.add(user_1)
     session.commit()
 
     response = client.get(f"/users/{user_1.id}")
     data = response.json()
-    
+
     assert response.status_code == 200
     assert data["username"] == user_1.username
     assert data["email"] == user_1.email
 
 
 def test_update_user(session: Session, client: TestClient):
-    user_1 = User(username="Deadpond", email="dive@email.com")
+    user_1 = UserBase(username="Deadpond", email="dive@email.com")
     session.add(user_1)
     session.commit()
 
@@ -103,7 +110,7 @@ def test_update_user(session: Session, client: TestClient):
 
 
 def test_update_user_missing_field(session: Session, client: TestClient):
-    user_1 = User(username="Deadpond", email="dive@email.com")
+    user_1 = UserBase(username="Deadpond", email="dive@email.com")
     session.add(user_1)
     session.commit()
 
@@ -115,16 +122,79 @@ def test_update_user_missing_field(session: Session, client: TestClient):
 
 
 def test_delete_user(session: Session, client: TestClient):
-    user_1 = User(username="Deadpond", email="dive@email.com")
+    user_1 = UserBase(username="Deadpond", email="dive@email.com")
     session.add(user_1)
     session.commit()
 
     response = client.delete(f"/users/{user_1.id}")
 
-    user_in_db = session.get(User, user_1.id)
+    user_in_db = session.get(UserBase, user_1.id)
     ic()
     ic(user_in_db)
 
     assert response.status_code == 200
 
     assert user_in_db is None
+
+
+def test_encrypt_password():
+    hash = hash_password("User pw")
+    assert check_password("User pw", hashed_password=hash)
+
+    assert not check_password("other pw", hashed_password=hash)
+
+
+def test_user_with_password(session: Session, client: TestClient):
+    secret_pw = "aPassowrd"
+
+    user_1 = User(username="Deadpond", email="dive@email.com", password=secret_pw)
+    session.add(user_1)
+    session.commit()
+    session.refresh(user_1)
+
+    user_2 = session.get(User, user_1.id)
+    assert user_1.username == user_2.username
+    assert user_1.password == secret_pw
+
+    user_2.password = hash_password(user_1.password)
+
+    assert check_password(secret_pw, user_2.password) is True
+
+
+def test_set_password_and_login(session: Session, client: TestClient):
+    secret_pw = "aPassowrd"
+
+    user = User(username="Deadpond", email="dive@email.com")
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    response = client.post(
+        "/user/set_password",
+        json={
+            "id": user.id,
+            "username": "Deadpond",
+            "email": "aaaa@bee.com",
+            "password": secret_pw,
+        },
+    )
+    json_response = response.json()
+
+    assert response.status_code == 200
+    assert len(json_response["password"]) > 20
+    
+    # Verify login for the same user
+    
+    response = client.post(
+        "/user/login",
+        json={
+            "id": user.id,
+            "username": "Deadpond",
+            "email": "aaaa@bee.com",
+            "password": secret_pw,
+        },
+    )
+    json_response = response.json()
+
+    assert response.status_code == 200
+    assert len(json_response["password"]) > 20

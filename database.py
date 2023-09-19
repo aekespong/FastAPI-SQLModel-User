@@ -1,15 +1,7 @@
-from sqlmodel import SQLModel, create_engine, Field, Session
-from typing import Optional
-
+from sqlmodel import SQLModel, create_engine, Session
+from model import UserBase, User
 from icecream import ic
 from faker import Faker
-
-
-class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    username: str
-    email: str
-
 
 DATABASE_URL = "sqlite:///./User.db"
 engine = create_engine(DATABASE_URL, echo=True)
@@ -27,8 +19,8 @@ def create_db_tables(drop_all=False):
     SQLModel.metadata.create_all(engine)
 
 
-def add_user(username: str, email: str) -> User:
-    user = User(username=username, email=email)
+def add_user(username: str, email: str) -> UserBase:
+    user = User(username=username, email=email, password=None)
     with Session(engine) as db:
         db.add(user)
         db.commit()

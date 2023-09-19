@@ -43,13 +43,13 @@
     <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
     <script>
       new gridjs.Grid({
-        columns: ['id', 'username', 'email'],
+        columns: ['id', 'fullname', 'username', 'email'],
         search: true,
         sort: true,
         pagination: false,
         server: {
             url: 'http://127.0.0.1:8000/users',
-            then: data => data.users.map(user => [user.id, user.username, user.email]),
+            then: data => data.users.map(user => [user.id, user.fullname, user.username, user.email]),
             handle: (res) => {
               // no matching records found
               if (res.status === 404) return {data: []};

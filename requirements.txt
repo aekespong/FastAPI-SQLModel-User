@@ -2,3 +2,4 @@ fastapi
 sqlmodel
 icecream
 pydantic==1.*
+bcrypt
